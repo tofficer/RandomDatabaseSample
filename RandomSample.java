@@ -30,10 +30,7 @@ public class RandomSample {
 
 		//create new table on query that is numbered by rows
 		//most expensive part of program
-
-		for (int i = 0; i <= this.user_query.length-2; i++) {
-			st.executeUpdate(this.user_query[i]);
-		}
+		for (int i = 0; i <= this.user_query.length-2; i++) st.executeUpdate(this.user_query[i]);
 
 		st.executeUpdate("CREATE TABLE " + new_table_name + " AS (SELECT row_number() over () as rownum, * FROM (" + this.user_query[user_query.length-1] + ") AS sq1);");
 
@@ -45,9 +42,7 @@ public class RandomSample {
 			String rowset = getRowSet(n);
 			st.executeUpdate("DELETE FROM " + new_table_name + " WHERE rownum NOT IN " + rowset + ";");
 		}
-		else {
-			System.out.println("The sample size you chose is >= the size of the table/query you requested");
-		}
+		else System.out.println("The sample size you chose is >= the size of the table/query you requested");
 
 		st.executeUpdate("ALTER TABLE " + new_table_name + " DROP COLUMN rownum;");
 		
