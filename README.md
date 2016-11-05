@@ -1,6 +1,6 @@
 # RandomDatabaseSample
 
-The Driver class interacts with the user through the terminal. Thus, the user will only have to run "//usr/lib/jvm/default-java/bin/java-Djava.security.auth.login.config=login.config -classpath ./postgresql -8.4-703.jdbc4.jar:Driver" to interact with the app. 
+The Driver class interacts with the user through the terminal. Thus, the user will only have to run "//usr/lib/jvm/default-java/bin/java-Djava.security.auth.login.config=login.config -classpath ./postgresql -8.4-703.jdbc4.jar:. Driver" to interact with the app. 
 
 The RandomSample class accepts user input, and will either print out the requested rows or store them in a new table.
 
