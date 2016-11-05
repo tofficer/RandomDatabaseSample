@@ -13,58 +13,55 @@ public class RandomSample {
 	String[] user_query;
 	double k;
 	String new_table_name;
-	String psql_url;
 	long seed;
+	Connection conn;
+	Statement st;
 
 	public RandomSample(String[] user_query, double k, long seed, String new_table_name, String psql_url) {
 		this.user_query = user_query;
 		this.k = k;
 		this.new_table_name = new_table_name;
-		this.psql_url = psql_url;
 		this.seed = seed;
+		this.conn = DriverManager.getConnection(psql_url);
+		this.st = conn.createStatement();
 	}
 	
 	public void execute() throws SQLException {
-		Connection conn = DriverManager.getConnection(this.psql_url);
-		Statement st = conn.createStatement();
-
-		//create new table on query that is numbered by rows
-		//most expensive part of program
-		for (int i = 0; i <= this.user_query.length-2; i++) st.executeUpdate(this.user_query[i]);
-
-		st.executeUpdate("CREATE TABLE " + new_table_name + " AS (SELECT row_number() over () as rownum, * FROM (" + this.user_query[user_query.length-1] + ") AS sq1);");
-
-		int n = 0;
-		ResultSet rs = st.executeQuery("SELECT count(*) FROM " + new_table_name + ";");
-		while (rs.next()) n = rs.getInt(1);
-
-		if (this.k < n) {
-			String rowset = getRowSet(n);
-			st.executeUpdate("DELETE FROM " + new_table_name + " WHERE rownum NOT IN " + rowset + ";");
-		}
-		else System.out.println("The sample size you chose is >= the size of the table/query you requested");
-
+		//create new table on query that is numbered by rows --> most expensive part of program
+		for (int i = 0; i <= user_query.length-2; i++) st.executeUpdate(user_query[i]);
+		st.executeUpdate("CREATE TABLE " + new_table_name + " AS (SELECT row_number() over () as rownum, * FROM (" + user_query[user_query.length-1] + ") AS sq1);");
+		
+		int n = getCount();
+		getRandomRows(n);
+		
 		st.executeUpdate("ALTER TABLE " + new_table_name + " DROP COLUMN rownum;");
 		
-		if (new_table_name.equals("PrintThenDeleteTable")) {
-			rs = st.executeQuery("SELECT * FROM PrintThenDeleteTable;");
-			printResultSet(rs);
-			st.executeUpdate("DROP TABLE IF EXISTS PrintThenDeleteTable;");
-		}
+		if (new_table_name.equals("PrintThenDeleteTable")) printResults();
 		
-		rs.close();
 		st.close();
 		conn.close();
 	}
 	
+	public int getCount() {
+		int n = 0;
+		ResultSet rs = st.executeQuery("SELECT count(*) FROM " + new_table_name + ";");
+		while (rs.next()) n = rs.getInt(1);
+		
+		return n;
+	}
+	
 	//choose k from n
-	public String getRowSet(double n) {
+	public void getRandomRows(double n) {
+		if (k >= n) {
+			System.out.println("The sample size you chose is >= the size of the table/query you requested");
+			return;
+		}
+		
 		double m = 0; //number selected so far
 		double t = 0; //number seen so far
-		Random rand = new Random(this.seed);
+		Random rand = new Random(seed);
 		
 		StringBuilder sb = new StringBuilder("(");
-
 		while (m < k) {
 			double u = rand.nextDouble();
 
@@ -77,10 +74,13 @@ public class RandomSample {
 			t++;
 		}
 		sb.append(")");
-		return sb.toString();
+		
+		st.executeUpdate("DELETE FROM " + new_table_name + " WHERE rownum NOT IN " + sb.toString() + ";");
 	}
 
-	public void printResultSet(ResultSet rs) throws SQLException {
+	public void printResults() throws SQLException {
+		ResultSet rs = st.executeQuery("SELECT * FROM PrintThenDeleteTable;");
+		st.executeUpdate("DROP TABLE IF EXISTS PrintThenDeleteTable;");
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int col_count = rsmd.getColumnCount(); 
 
@@ -91,5 +91,7 @@ public class RandomSample {
 			}
 			System.out.println("");
 		}
+		
+		rs.close();
 	}
 }
