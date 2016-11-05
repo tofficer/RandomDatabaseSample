@@ -1,6 +1,6 @@
 import java.util.Scanner;
 
-public class Driver2 {
+public class Driver {
 	
 	private static Scanner in = new Scanner(System.in);
 
